@@ -1,0 +1,5 @@
+Sample	Total reads	Short cis reads (<20kb)	Cis reads (>20kb)	Trans reads	Cis/Trans ratio	% Long-range intrachromosomal reads	convergence	slope
+KD_REP1	225898	99597	126301	0	100	55.911	NA	-0.87
+KD_REP2	213137	93632	119505	0	100	56.07	NA	-0.87
+WT_REP1	255434	112423	143011	0	100	55.987	NA	-0.86
+WT_REP2	261091	114874	146217	0	100	56.002	NA	-0.86

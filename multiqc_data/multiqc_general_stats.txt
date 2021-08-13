@@ -1,0 +1,25 @@
+Sample	Samtools_mqc-generalstats-samtools-flagstat_total	Samtools_mqc-generalstats-samtools-mapped_passed	Samtools_mqc-generalstats-samtools-error_rate	Samtools_mqc-generalstats-samtools-non_primary_alignments	Samtools_mqc-generalstats-samtools-reads_mapped	Samtools_mqc-generalstats-samtools-reads_mapped_percent	Samtools_mqc-generalstats-samtools-reads_properly_paired_percent	Samtools_mqc-generalstats-samtools-reads_MQ0_percent	Samtools_mqc-generalstats-samtools-raw_total_sequences	FastQC_mqc-generalstats-fastqc-percent_duplicates	FastQC_mqc-generalstats-fastqc-percent_gc	FastQC_mqc-generalstats-fastqc-avg_sequence_length	FastQC_mqc-generalstats-fastqc-percent_fails	FastQC_mqc-generalstats-fastqc-total_sequences	Cutadapt_mqc-generalstats-cutadapt-percent_trimmed
+KD_REP1.srt	1199151	1175745	0.004919056	0.0	1143368.0	97.99395598462084	0.0	3.2247890336946146	1166774.0						
+KD_REP1_T0_1										32.01185265522717	45.0	94.68024944803811	10.0	51634.0	
+KD_REP1_T0_2										10.202579695549446	48.0	89.89692838052446	0.0	51634.0	
+KD_REP1_T1_1										54.41443540613649	45.0	61.45223770250313	20.0	539683.0	
+KD_REP1_T1_2										33.30587413606453	50.0	70.98339580828005	10.0	539683.0	
+KD_REP2.srt	1145904	1124533	0.004813014	0.0	1098005.0	98.09081130915796	0.0	3.1848101084890152	1119376.0						
+KD_REP2_T0_1										22.372625758500604	45.0	95.04369681519515	10.0	27851.0	
+KD_REP2_T0_2										9.540052421816085	48.0	90.2441564037198	0.0	27851.0	
+KD_REP2_T1_1										54.384921653438454	45.0	61.448546451853126	20.0	539817.0	
+KD_REP2_T1_2										33.27081043362253	50.0	70.98163266440294	10.0	539817.0	
+KD_rep1_R2															1.1514289392716939
+KD_rep2_R2															0.0
+WT_REP1.srt	1421879	1394898	0.005261424	0.0	1349497.0	98.0398524349826	0.0	2.600913345509336	1376478.0						
+WT_REP1_T0_1										40.61103543862165	46.0	94.62460869357422	10.0	83694.0	
+WT_REP1_T0_2										12.470427987669368	50.0	89.5901020383779	0.0	83694.0	
+WT_REP1_T1_1										56.42459708988576	45.0	61.446524892039434	20.0	613650.0	
+WT_REP1_T1_2										36.163363415257	50.0	70.98405931720036	10.0	613650.0	
+WT_REP2.srt	1440588	1412955	0.005435183	0.0	1366097.0	98.01733477789816	0.0	2.596342189663708	1393730.0						
+WT_REP2_T0_1										42.40014732805408	46.0	94.89937277247566	10.0	92311.0	
+WT_REP2_T0_2										12.13723174919565	50.0	90.01345451787978	0.0	92311.0	
+WT_REP2_T1_1										56.41143159306139	45.0	61.44608179434574	20.0	613661.0	
+WT_REP2_T1_2										36.16047357326605	50.0	70.98184502518491	10.0	613661.0	
+WT_rep1_R2															0.0
+WT_rep2_R2															1.1623116414662347

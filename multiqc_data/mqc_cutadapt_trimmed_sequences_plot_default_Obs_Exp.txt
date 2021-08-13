@@ -1,0 +1,5 @@
+Sample	3
+KD_rep1_R2 - First read: Adapter 1	63.05994663504299
+KD_rep2_R2 - First read: Adapter 1	63.99586397058824
+WT_rep1_R2 - First read: Adapter 1	64.00091764166093
+WT_rep2_R2 - First read: Adapter 1	63.04990353027063

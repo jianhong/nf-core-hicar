@@ -1,0 +1,5 @@
+Sample	cutadapt_version	pairs_processed	r1_with_adapters	r2_with_adapters	pairs_written	bp_processed	bp_written	percent_trimmed	pairs_filtered_unexplained
+KD_rep1_R2	3.4	539683	531753	0	531753	71994977	71166006	1.1514289392716939	7930
+KD_rep2_R2	3.4	27851	27851	0	27851	5163827	5163827	0.0	
+WT_rep1_R2	3.4	83694	83694	0	83694	15428760	15428760	0.0	
+WT_rep2_R2	3.4	613661	604554	0	604554	81859113	80907655	1.1623116414662347	9107
