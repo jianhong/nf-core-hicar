@@ -1,5 +1,5 @@
 Sample	3
-KD_rep1_R2 - First read: Adapter 1	531753
-KD_rep2_R2 - First read: Adapter 1	27851
-WT_rep1_R2 - First read: Adapter 1	83694
-WT_rep2_R2 - First read: Adapter 1	604554
+KD_rep1_R2 - First read: Adapter 1	51634
+KD_rep2_R2 - First read: Adapter 1	531837
+WT_rep1_R2 - First read: Adapter 1	604545
+WT_rep2_R2 - First read: Adapter 1	92311

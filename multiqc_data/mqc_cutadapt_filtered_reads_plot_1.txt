@@ -1,5 +1,5 @@
 Sample	Pairs passing filters	Filtered pairs (uncategorised)
-KD_rep1_R2	531753.0	7930.0
-KD_rep2_R2	27851.0	nan
-WT_rep1_R2	83694.0	nan
-WT_rep2_R2	604554.0	9107.0
+KD_rep1_R2	51634.0	nan
+KD_rep2_R2	531837.0	7980.0
+WT_rep1_R2	604545.0	9105.0
+WT_rep2_R2	92311.0	nan
