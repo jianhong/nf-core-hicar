@@ -14,6 +14,7 @@ include { GENOME_FILTER               } from '../../modules/local/genome/filter'
 include { COOLER_DIGEST               } from '../../modules/nf-core/modules/cooler/digest/main'
 include { GFFREAD                     } from '../../modules/nf-core/modules/gffread/main'
 include { BWA_INDEX                   } from '../../modules/nf-core/modules/bwa/index/main'
+include { BOWTIE2_BUILD               } from '../../modules/nf-core/modules/bowtie2/build/main'
 
 workflow PREPARE_GENOME {
     main:
@@ -133,9 +134,13 @@ workflow PREPARE_GENOME {
     ch_version = ch_version.mix(COOLER_DIGEST.out.versions.ifEmpty(null))
 
     /*
-     * Uncompress bwa index or generate from scratch if required
+     * Uncompress alignment index or generate from scratch if required
      */
-    ch_bwa_index = params.bwa_index ? Channel.value(file(params.bwa_index)) : BWA_INDEX ( ch_fasta ).index
+    if(params.method == "HiCAR"){
+        ch_bwa_index = params.bwa_index ? Channel.value(file(params.bwa_index)) : BWA_INDEX ( ch_fasta ).index
+    }else{
+        ch_bwa_index = params.bowtie2 ? Channel.value(file(params.bowtie2)) : BOWTIE2_BUILD ( ch_fasta ).index
+    }
 
     emit:
     fasta             = ch_fasta                       // path: genome.fasta,

@@ -26,7 +26,8 @@ process MAPS_CUT {
         "bglii": [site:"AGATCT", pos:"1"],
         "hindiii": [site:"AAGCTT", pos:'1'],
         "cviqi": [site:"GTAC", pos:"1"],
-        "arima": [site:"GATC,GA.TC", pos:"0,1"],
+        "arima": [site:"GATC,GA.TC", pos:"0,1"],,
+        "dnase": [site:"dnase", pos:"none"]
         "mnase": [site:"mnase", pos:"none"]]
     def enzyme = RE_cutsite[params.enzyme.toLowerCase()]?:[site:params.enzyme.replaceAll("^", ""), pos:params.enzyme.indexOf('^')]
     """

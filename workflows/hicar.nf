@@ -22,17 +22,44 @@ if (params.input) {
 } else { exit 1, 'Input samplesheet not specified!' }
 
 // set the restriction_sites
+"mboi": [site:"GATC", pos:"0"],
+"ncoi": [site:"CCATGG", pos:"1"],
+"dpnii": [site:"GATC", pos:"0"],
+"bglii": [site:"AGATCT", pos:"1"],
+"hindiii": [site:"AAGCTT", pos:'1'],
+"cviqi": [site:"GTAC", pos:"1"],
+"arima": [site:"GATC,GA.TC", pos:"0,1"],
+"dnase": [site:"dnase", pos:"none"],
+"mnase": [site:"mnase", pos:"none"]]
 def RE_cutsite = [
     "mboi": "^GATC",
+    "ncoi": "^CATGG",
     "dpnii": "^GATC",
     "bglii": "^GATCT",
     "hindiii": "^AGCTT",
-    "cviqi": "^TAC"]
+    "cviqi": "^TAC",
+    "arima": "arima",
+    "dnase": "dnase",
+    "mnase": "mnase"]
 if (!params.enzyme.toLowerCase() in RE_cutsite){
     exit 1, "Not supported yet!"
 }
+if (params.method != "HiCAR" && params.enzyme=="CviQI"){
+    exit 1, "The method is not HiCAR, but you are setting the enzyme to CviQI. Please make sure the enzyme you are used. If it is CviQI, please change it to cviqi."
+}
 params.restriction_sites = RE_cutsite[params.enzyme.toLowerCase()]
-
+def LIGATION_SITES = [
+    "mboi": "GATCGATC",
+    "ncoi": "CCATGCATGG",
+    "dpnii": "GCTCGATC",
+    "bglii": "AGATCGATCT",
+    "hindiii": "AAGCTAGCTT",
+    "cviqi": "GTATAC",
+    "arima": "GATCGATC,GATCGANT,GANTGATC,GANTGANT",
+    "dnase": "dnase",
+    "mnase": "mnase"
+]
+params.ligation_site = LIGATION_SITES[params.enzyme.toLowerCase()]
 /*
 ================================================================================
     CONFIG FILES
@@ -61,7 +88,15 @@ ch_feature_frag2bin_source   = file(params.feature_frag2bin_source,
                                     checkIfExists: true)
 ch_make_maps_runfile_source  = file(params.make_maps_runfile_source,
                                     checkIfExists: true)
-
+ch_cutsite_trimming          = file(params.cutsite_trimming_source,
+                                    checkIfExists: true)
+ch_merge_sam_path            = file(params.merge_sam_source,
+                                    checkIfExists: true)
+ch_map_fragment_ptah         = file(params.map_fragment_source,
+                                    checkIfExists: true)
+ch_map_dnase_path            = file(params.map_dnase_source,
+                                    checkIfExists: true)
+hicpro_version = file(params.hicpro_source, checkIfExists: true).readLines().findAll{it ==~ /VERSION=/}.collect{it.replaceAll('VERSION=', '')}
 /*
 ================================================================================
     IMPORT LOCAL MODULES/SUBWORKFLOWS
@@ -165,7 +200,7 @@ workflow HICAR {
     //
     // MODULE: trimming
     //
-    if(!params.skip_cutadapt){
+    if(params.method == "HiCAR" && !params.skip_cutadapt){
         CUTADAPT(
             ch_reads
         )
@@ -179,25 +214,40 @@ workflow HICAR {
     //
     // MODULE: mapping
     //
-    BWA_MEM(
-        reads4mapping,
-        PREPARE_GENOME.out.bwa_index,
-        false
-    )
-    ch_versions = ch_versions.mix(BWA_MEM.out.versions.ifEmpty(null))
+    if(params.method == "HiCAR"){
+        BWA_MEM(
+            reads4mapping,
+            PREPARE_GENOME.out.bwa_index,
+            false
+        )
+        ch_versions = ch_versions.mix(BWA_MEM.out.versions.ifEmpty(null))
+        ch_mapped = BWA_MEM.out.bam
+    }else{//two step mapping
+        BOWTIE2_2STEP(
+            reads4mapping,
+            PREPARE_GENOME.out.bwa_index,
+            params.enzyme,
+            params.ligation_site,
+            params.enzyme.toLowerCase()=="dnase",
+            hicpro_version,
+            ch_cutsite_trimming,
+            ch_merge_sam_path
+        )
+        ch_versions = ch_versions.mix(BOWTIE_2STEP.out.versions.ifEmpty(null))
+        ch_mapped = BOWTIE_2STEP.out.bam
+    }
 
     //
     // Pool the technique replicates
     //
-    BWA_MEM.out.bam
-                .map{
-                    meta, bam ->
-                        meta.id = meta.group + "_REP" + meta.replicate
-                        [meta.id, meta, bam]
-                }
-                .groupTuple(by: [0])
-                .map{[it[1][0], it[2].flatten()]}
-                .set{ mapped_bam }
+    ch_mapped.map{
+                meta, bam ->
+                    meta.id = meta.group + "_REP" + meta.replicate
+                    [meta.id, meta, bam]
+            }
+            .groupTuple(by: [0])
+            .map{[it[1][0], it[2].flatten()]}
+            .set{ mapped_bam }
     //mapped_bam.view()//no branch to multiple and single, need to rename the bam files
     SAMTOOLS_MERGE(mapped_bam, [])
     ch_versions = ch_versions.mix(SAMTOOLS_MERGE.out.versions.ifEmpty(null))
@@ -211,16 +261,27 @@ workflow HICAR {
     ch_multiqc_files = ch_multiqc_files.mix(BAM_STAT.out.flagstat.collect{it[1]}.ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(BAM_STAT.out.idxstats.collect{it[1]}.ifEmpty([]))
 
-    //
-    // SUBWORKFLOW: filter reads, output pair (like hic pair), raw (pair), and stats
-    //
-    PAIRTOOLS_PAIRE(
-        SAMTOOLS_MERGE.out.bam,
-        PREPARE_GENOME.out.chrom_sizes,
-        PREPARE_GENOME.out.digest_genome
-    )
-    ch_versions = ch_versions.mix(PAIRTOOLS_PAIRE.out.versions.ifEmpty(null))
-    ch_multiqc_files = ch_multiqc_files.mix(PAIRTOOLS_PAIRE.out.stat.collect().ifEmpty([]))
+    if(params.method == "HiCAR"){
+        //
+        // SUBWORKFLOW: filter reads, output pair (like hic pair), raw (pair), and stats
+        //
+        PAIRTOOLS_PAIRE(
+            SAMTOOLS_MERGE.out.bam,
+            PREPARE_GENOME.out.chrom_sizes,
+            PREPARE_GENOME.out.digest_genome
+        )
+        ch_versions = ch_versions.mix(PAIRTOOLS_PAIRE.out.versions.ifEmpty(null))
+        ch_multiqc_files = ch_multiqc_files.mix(PAIRTOOLS_PAIRE.out.stat.collect().ifEmpty([]))
+    }else{
+        HICPRO_VALID(
+            SAMTOOLS_MERGE.out.bam,
+            PREPARE_GENOME.out.digest_genome,
+            params.enzyme.toLowerCase()=="dnase",
+            hicpro_version,
+            ch_map_fragment_ptah,
+            ch_map_dnase_path
+        )
+    }
 
     //
     // combine bin_size and create cooler file, and dump long_bedpe
@@ -236,17 +297,32 @@ workflow HICAR {
     )
     ch_versions = ch_versions.mix(COOLER.out.versions.ifEmpty(null))
 
-    //
-    // calling ATAC peaks, output ATAC narrowPeak and reads in peak
-    //
-    ATAC_PEAK(
-        PAIRTOOLS_PAIRE.out.validpair,
-        PREPARE_GENOME.out.chrom_sizes,
-        PREPARE_GENOME.out.gsize,
-        PREPARE_GENOME.out.gtf
-    )
-    ch_versions = ch_versions.mix(ATAC_PEAK.out.versions.ifEmpty(null))
-    ch_multiqc_files = ch_multiqc_files.mix(ATAC_PEAK.out.stats.collect().ifEmpty([]))
+    if(params.method == "HiCAR"){
+        //
+        // calling ATAC peaks, output ATAC narrowPeak and reads in peak
+        //
+        ATAC_PEAK(
+            PAIRTOOLS_PAIRE.out.validpair,
+            PREPARE_GENOME.out.chrom_sizes,
+            PREPARE_GENOME.out.gsize,
+            PREPARE_GENOME.out.gtf
+        )
+        ch_versions = ch_versions.mix(ATAC_PEAK.out.versions.ifEmpty(null))
+        ch_multiqc_files = ch_multiqc_files.mix(ATAC_PEAK.out.stats.collect().ifEmpty([]))
+        ch_anchor_mergedpeaks <- ATAC_PEAK.out.mergedpeak
+        ch_anchor_peaks <- ATAC_PEAK.out.peak
+        ch_anchor_reads <- ATAC_PEAK.out.reads
+        ch_anchor_bws <- ATAC_PEAK.out.bws
+    }else{
+        //
+        // use user_defined peaks or call peaks from chip seq
+        //
+        if(params.anchor_peaks){
+
+        }else{
+
+        }
+    }
 
     //
     // calling distal peaks: [ meta, bin_size, path(macs2), path(long_bedpe), path(short_bed), path(background) ]
@@ -257,10 +333,10 @@ workflow HICAR {
                                     ch_merge_map_py_source,
                                     ch_feature_frag2bin_source).bin_feature
     ch_versions = ch_versions.mix(MAPS_MULTIENZYME.out.versions.ifEmpty(null))
-    reads_peak   = ATAC_PEAK.out.reads
+    reads_peak   = ch_anchor_reads
                             .map{ meta, reads ->
                                     [meta.id, reads]} // here id is group
-                            .combine(ATAC_PEAK.out.mergedpeak)// group, reads, peaks
+                            .combine(ch_anchor_mergedpeaks)// group, reads, peaks
                             .cross(COOLER.out.bedpe.map{[it[0].id, it[0].bin, it[1]]})// group, bin, bedpe
                             .map{ short_bed, long_bedpe -> //[bin_size, group, macs2, long_bedpe, short_bed]
                                     [long_bedpe[1], short_bed[0], short_bed[2], long_bedpe[2], short_bed[1]]}
@@ -293,8 +369,7 @@ workflow HICAR {
     MAPS_PEAK.out.peak.map{[it[0].id+'.'+it[1]+'.contacts',
                             RelativePublishFolder.getPublishedFolder(workflow,
                                                 'MAPS_REFORMAT')+it[2].name]}
-        .mix(ATAC_PEAK.out
-                    .bws.map{[it[0].id+"_R2",
+        .mix(ch_anchor_bws.map{[it[0].id+"_R2",
                         RelativePublishFolder.getPublishedFolder(workflow,
                                             'UCSC_BEDGRAPHTOBIGWIG_PER_GROUP')+it[1].name]})
         .set{ch_trackfiles} // collect track files for igv
@@ -319,7 +394,7 @@ workflow HICAR {
         // merge ATAC_PEAK with R1_PEAK by group id
         distalpair = PAIRTOOLS_PAIRE.out.hdf5.map{meta, bed -> [meta.group, bed]}
                                             .groupTuple()
-        grouped_reads_peak = ATAC_PEAK.out.peak.map{[it[0].id, it[1]]}
+        grouped_reads_peak = ch_anchor_peaks.map{[it[0].id, it[1]]}
                                 .join(R1_PEAK.out.peak.map{[it[0].id, it[1]]})
                                 .join(distalpair)
                                 .map{[[id:it[0]], it[1], it[2], it[3]]}
